@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        :root{
+            --card-bg: #ffffff;
+            --primary: #4f46e5; /* indigo-600 */
+            --muted: #6b7280; /* gray-500 */
+            --success: #10b981;
+            --danger: #ef4444;
+            --glass: rgba(255,255,255,0.7);
+        }
+        *{box-sizing: border-box}
+        html,body{
+            height:100%;
+            margin:0;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui;
+            background: linear-gradient(180deg,#e6f0ff 0%, #f8fbff 40%, #ffffff 100%);
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+        }
+        .wrap{
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:24px;
+        }
+        .quiz-box{
+            width:100%;
+            max-width:440px;
+            background: linear-gradient(180deg,var(--glass), #ffffff);
+            border-radius:14px;
+            padding:22px;
+            box-shadow: 0 10px 30px rgba(18,38,63,0.12);
+            border: 1px solid rgba(71,85,105,0.06);
+            backdrop-filter: blur(6px);
+        }
+        .top-row{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:12px;
+        }
+        .title{
+            font-weight:700;
+            color:#0f172a;
+            font-size:16px;
+        }
+        .progress{
+            flex:1;
+            height:8px;
+            background:#eef2ff;
+            border-radius:999px;
+            overflow:hidden;
+            margin-left:12px;
+        }
+        .progress > i{
+            display:block;
+            height:100%;
+            background:linear-gradient(90deg,var(--primary), #7c3aed);
+            width:0%;
+            transition:width 400ms ease;
+        }
+
+        h2#question{
+            font-size:18px;
+            margin:8px 0 16px 0;
+            color:#0b1220;
+            line-height:1.3;
+        }
+
+        .options{
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+        }
+
+        /* custom option */
+        .option{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            background:#fff;
+            border:1px solid rgba(15,23,42,0.06);
+            padding:12px 14px;
+            border-radius:10px;
+            cursor:pointer;
+            transition:transform 150ms ease, box-shadow 150ms ease, border-color 150ms;
+            user-select:none;
+        }
+        .option:hover{ transform:translateY(-3px); box-shadow: 0 8px 18px rgba(15,23,42,0.06); }
+        .option .dot{
+            width:18px;
+            height:18px;
+            border-radius:50%;
+            border:2px solid #cbd5e1;
+            display:inline-block;
+            flex:0 0 18px;
+            position:relative;
+        }
+        .option .dot::after{
+            content:"";
+            position:absolute;
+            inset:3px;
+            border-radius:50%;
+            background:transparent;
+            transition:background 150ms ease;
+        }
+        input[type="radio"]{ display:none; }
+        /* when radio checked, style parent using sibling selector */
+        input[type="radio"]:checked + .option {
+            border-color: rgba(79,70,229,0.15);
+            box-shadow: 0 12px 30px rgba(79,70,229,0.06);
+        }
+        input[type="radio"]:checked + .option .dot{
+            border-color:var(--primary);
+            box-shadow:0 4px 12px rgba(99,102,241,0.12) inset;
+        }
+        input[type="radio"]:checked + .option .dot::after{
+            background:var(--primary);
+        }
+
+        .option .label-text{
+            color:#0b1220;
+            font-size:15px;
+        }
+
+        .controls{
+            display:flex;
+            gap:8px;
+            margin-top:18px;
+        }
+        button{
+            cursor:pointer;
+            border:0;
+            padding:10px 14px;
+            font-weight:600;
+            border-radius:10px;
+            font-size:14px;
+        }
+        .btn-primary{
+            background:linear-gradient(90deg,var(--primary), #7c3aed);
+            color:white;
+            box-shadow: 0 8px 24px rgba(79,70,229,0.12);
+            flex:1;
+        }
+        .btn-ghost{
+            background:transparent;
+            border:1px solid rgba(15,23,42,0.06);
+            color:var(--muted);
+            min-width:94px;
+        }
+        .muted{
+            color:var(--muted);
+            font-size:13px;
+        }
+        .result{
+            text-align:center;
+            padding:22px 12px;
+        }
+        .score{
+            font-size:28px;
+            font-weight:800;
+            color:var(--primary);
+            margin-bottom:8px;
+        }
+        .feedback{
+            margin-top:10px;
+            font-weight:700;
+        }
+        .correct{
+            border-color: rgba(16,185,129,0.15) !important;
+            box-shadow: 0 8px 20px rgba(16,185,129,0.06) !important;
+        }
+        .wrong{
+            border-color: rgba(239,68,68,0.12) !important;
+            box-shadow: 0 8px 20px rgba(239,68,68,0.05) !important;
+            opacity:0.95;
+        }
+        @media (max-width:420px){
+            .quiz-box{ padding:16px; border-radius:12px; }
+            .title{ font-size:14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="quiz-box" aria-live="polite">
+            <div class="top-row">
+                <div class="title">Quick Quiz</div>
+                <div class="progress" aria-hidden="true"><i></i></div>
+            </div>
+
+            <h2 id="question">Loading…</h2>
+
+            <div class="options" id="options">
+                <!-- options populated by JS -->
+            </div>
+
+            <div class="controls">
+                <button class="btn-ghost" id="restart" type="button">Restart</button>
+                <button class="btn-primary" id="next" type="button" disabled>Next</button>
+            </div>
+
+            <div id="resultArea" style="display:none;" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                question: "What is the full form of HTML?",
+                a: "Hyper Text Markup Language",
+                b: "High Text Machine Language",
+                c: "Hyperlinks Text Markup Language",
+                d: "None",
+                correct: "a"
+            },
+            {
+                question: "What is JavaScript used for?",
+                a: "Styling",
+                b: "Database",
+                c: "Logic & Interaction",
+                d: "Server Only",
+                correct: "c" // corrected so JS -> Logic & Interaction
+            },
+            {
+                question: "What is CSS used for?",
+                a: "Logic",
+                b: "Structure",
+                c: "Styling",
+                d: "Database",
+                correct: "c"
+            },
+        ];
+
+        let current = 0;
+        let score = 0;
+
+        const questionEl = document.getElementById("question");
+        const optionsEl = document.getElementById("options");
+        const nextBtn = document.getElementById("next");
+        const restartBtn = document.getElementById("restart");
+        const progressBar = document.querySelector(".progress > i");
+        const resultArea = document.getElementById("resultArea");
+
+        function createOption(id, value, text){
+            // unique id for label association
+            const inputId = `opt-${id}-${value}`;
+            return `
+                <div>
+                    <input type="radio" id="${inputId}" name="answer" value="${value}">
+                    <label class="option" for="${inputId}" aria-live="off">
+                        <span class="dot" aria-hidden="true"></span>
+                        <span class="label-text">${text}</span>
+                    </label>
+                </div>
+            `;
+        }
+
+        function updateProgress(){
+            const pct = Math.round((current / quizData.length) * 100);
+            progressBar.style.width = `${pct}%`;
+            progressBar.setAttribute("aria-valuenow", pct);
+        }
+
+        function loadQuestion(){
+            // reset UI
+            nextBtn.disabled = true;
+            resultArea.style.display = "none";
+            optionsEl.innerHTML = "";
+
+            const q = quizData[current];
+            questionEl.textContent = q.question;
+
+            optionsEl.innerHTML += createOption(current, "a", q.a);
+            optionsEl.innerHTML += createOption(current, "b", q.b);
+            optionsEl.innerHTML += createOption(current, "c", q.c);
+            optionsEl.innerHTML += createOption(current, "d", q.d);
+
+            // attach change listeners to inputs
+            document.querySelectorAll("input[name='answer']").forEach(input => {
+                input.addEventListener("change", () => {
+                    // enable next button when a selection is made
+                    nextBtn.disabled = false;
+                });
+            });
+
+            updateProgress();
+            // update next button text for last question
+            nextBtn.textContent = (current === quizData.length - 1) ? "Finish" : "Next";
+            // ensure any previous visual marks removed
+            document.querySelectorAll(".option").forEach(el => el.classList.remove("correct","wrong"));
+        }
+
+        function showResult(){
+            const pct = Math.round((score / quizData.length) * 100);
+            resultArea.style.display = "block";
+            resultArea.innerHTML = `
+                <div class="score">${score} / ${quizData.length}</div>
+                <div class="muted">You scored ${pct}%</div>
+                <div class="feedback" style="color:${pct>=70 ? '#059669' : '#dc2626'}">
+                    ${pct>=70 ? "Great job!" : (pct>=40 ? "Not bad — try again to improve." : "Keep practicing!")}
+                </div>
+            `;
+            progressBar.style.width = "100%";
+            nextBtn.disabled = true;
+        }
+
+        nextBtn.addEventListener("click", () => {
+            const selected = document.querySelector("input[name='answer']:checked");
+            if(!selected) return;
+
+            // find the label element next to the checked input
+            const label = selected.nextElementSibling;
+            const answer = selected.value;
+            const correct = quizData[current].correct;
+
+            // mark correct/incorrect visually
+            if(answer === correct){
+                score++;
+                label.classList.add("correct");
+            } else {
+                label.classList.add("wrong");
+                // highlight the correct option as well
+                const correctInput = document.querySelector(`input[name="answer"][value="${correct}"]`);
+                if(correctInput && correctInput.nextElementSibling){
+                    correctInput.nextElementSibling.classList.add("correct");
+                }
+            }
+
+            // disable further changes while showing feedback
+            document.querySelectorAll("input[name='answer']").forEach(i => i.disabled = true);
+            nextBtn.disabled = true;
+
+            // short pause to show feedback before moving on or finishing
+            setTimeout(() => {
+                current++;
+                if(current < quizData.length){
+                    loadQuestion();
+                } else {
+                    // show final result inside card
+                    showResult();
+                }
+            }, 800);
+        });
+
+        restartBtn.addEventListener("click", () => {
+            current = 0;
+            score = 0;
+            // re-enable any inputs and reload
+            loadQuestion();
+            document.querySelectorAll("input[name='answer']").forEach(i => i.disabled = false);
+        });
+
+        // initial load
+        loadQuestion();
+
+        // convenience: allow Enter key to trigger Next when it's enabled
+        document.addEventListener("keydown", (e) => {
+            if(e.key === "Enter" && !nextBtn.disabled){
+                e.preventDefault();
+                nextBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
